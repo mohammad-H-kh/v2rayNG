@@ -21,11 +21,22 @@ import com.v2ray.ang.extension.toast
 import com.v2ray.ang.util.*
 import com.v2ray.ang.util.MmkvManager.KEY_ANG_CONFIGS
 import kotlinx.coroutines.*
+import java.text.DecimalFormat
 import java.util.*
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
-    private val mainStorage by lazy { MMKV.mmkvWithID(MmkvManager.ID_MAIN, MMKV.MULTI_PROCESS_MODE) }
-    private val serverRawStorage by lazy { MMKV.mmkvWithID(MmkvManager.ID_SERVER_RAW, MMKV.MULTI_PROCESS_MODE) }
+    private val mainStorage by lazy {
+        MMKV.mmkvWithID(
+            MmkvManager.ID_MAIN,
+            MMKV.MULTI_PROCESS_MODE
+        )
+    }
+    private val serverRawStorage by lazy {
+        MMKV.mmkvWithID(
+            MmkvManager.ID_SERVER_RAW,
+            MMKV.MULTI_PROCESS_MODE
+        )
+    }
 
     var serverList = MmkvManager.decodeServerList()
     var subscriptionId: String = ""
@@ -40,7 +51,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun startListenBroadcast() {
         isRunning.value = false
-        getApplication<AngApplication>().registerReceiver(mMsgReceiver, IntentFilter(AppConfig.BROADCAST_ACTION_ACTIVITY))
+        getApplication<AngApplication>().registerReceiver(
+            mMsgReceiver,
+            IntentFilter(AppConfig.BROADCAST_ACTION_ACTIVITY)
+        )
         MessageUtil.sendMsg2Service(getApplication(), AppConfig.MSG_REGISTER_CLIENT, "")
     }
 
@@ -62,9 +76,62 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         serverList.remove(guid)
         MmkvManager.removeServer(guid)
         val index = getPosition(guid)
-        if(index >= 0){
+        if (index >= 0) {
             serversCache.removeAt(index)
         }
+    }
+
+    // TODO : Demon View
+    fun updateServer(total: Long, usage: Long, email: String, password: String, position: Int) {
+
+        val decimalFormat = DecimalFormat("#.##")
+        decimalFormat.maximumFractionDigits = 2
+        var vollTotal = ""
+
+
+        if (total == 0L){
+            vollTotal = "Unlimited"
+        }else{
+            val resultTotal = checkFileSize(total)
+            val convertedTotalNumber = resultTotal.first
+            val Totalunit = resultTotal.second
+            vollTotal = "${decimalFormat.format(convertedTotalNumber)} ${Totalunit}"
+        }
+
+        val resultUsage = checkFileSize(usage)
+        val convertedUsageNumber = resultUsage.first
+        val Usageunit = resultUsage.second
+        val vollUsage = "${decimalFormat.format(convertedUsageNumber)} ${Usageunit}"
+
+        getApplication<AngApplication>().toast("your usage is : $vollUsage / $vollTotal")
+
+
+
+
+
+
+
+//        println("The absolute number is: $vollUsage/$vollTotal")
+
+    }
+    fun dontUseRadepa(){
+        getApplication<AngApplication>().toast("Your config is not created with radepa-xui panel")
+    }
+
+    fun checkFileSize(number: Long): Pair<Double, String> {
+        val absNumber = Math.abs(number.toDouble())
+
+        val unit: String = when {
+            absNumber < 1024 -> "bytes"
+            absNumber < 1024 * 1024 -> "KB"
+            absNumber < 1024 * 1024 * 1024 -> "MB"
+            else -> "GB"
+        }
+
+        val convertedNumber =
+            absNumber / Math.pow(1024.0, listOf("bytes", "KB", "MB", "GB").indexOf(unit).toDouble())
+
+        return Pair(convertedNumber, unit)
     }
 
     fun appendCustomConfigServer(server: String) {
@@ -75,7 +142,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val key = MmkvManager.encodeServerConfig("", config)
         serverRawStorage?.encode(key, server)
         serverList.add(0, key)
-        serversCache.add(0, ServersCache(key,config))
+        serversCache.add(0, ServersCache(key, config))
     }
 
     fun swapServer(fromPosition: Int, toPosition: Int) {
@@ -115,7 +182,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         val testResult = SpeedtestUtil.tcping(serverAddress, serverPort)
                         launch(Dispatchers.Main) {
                             MmkvManager.encodeServerTestDelayMillis(item.guid, testResult)
-                            updateListAction.value =  getPosition(item.guid)
+                            updateListAction.value = getPosition(item.guid)
                         }
                     }
                 }
@@ -133,7 +200,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             for (item in serversCache) {
                 val config = V2rayConfigUtil.getV2rayConfig(getApplication(), item.guid)
                 if (config.status) {
-                    MessageUtil.sendMsg2TestService(getApplication(), AppConfig.MSG_MEASURE_CONFIG, Pair(item.guid, config.content))
+                    MessageUtil.sendMsg2TestService(
+                        getApplication(),
+                        AppConfig.MSG_MEASURE_CONFIG,
+                        Pair(item.guid, config.content)
+                    )
                 }
             }
         }
@@ -143,7 +214,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         MessageUtil.sendMsg2Service(getApplication(), AppConfig.MSG_MEASURE_DELAY, "")
     }
 
-    fun filterConfig(context :Context) {
+    fun filterConfig(context: Context) {
         val subscriptions = MmkvManager.decodeSubscriptions()
         val listId = subscriptions.map { it.first }.toList().toMutableList()
         val listRemarks = subscriptions.map { it.second.remarks }.toList().toMutableList()
@@ -155,7 +226,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         val ivBinding = DialogConfigFilterBinding.inflate(LayoutInflater.from(context))
-        ivBinding.spSubscriptionId.adapter = ArrayAdapter<String>( context, android.R.layout.simple_spinner_dropdown_item, listRemarks)
+        ivBinding.spSubscriptionId.adapter = ArrayAdapter<String>(
+            context,
+            android.R.layout.simple_spinner_dropdown_item,
+            listRemarks
+        )
         ivBinding.spSubscriptionId.setSelection(checkedItem)
         ivBinding.etKeyword.text = Utils.getEditable(keywordFilter)
         val builder = AlertDialog.Builder(context).setView(ivBinding.root)
@@ -193,7 +268,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 //            }.show()
     }
 
-    fun getPosition(guid: String) : Int {
+    fun getPosition(guid: String): Int {
         serversCache.forEachIndexed { index, it ->
             if (it.guid == guid)
                 return index
@@ -206,20 +281,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         serversCache.forEachIndexed { index, it ->
             val outbound = it.config.getProxyOutbound()
             serversCache.forEachIndexed { index2, it2 ->
-                if(index2 > index){
+                if (index2 > index) {
                     val outbound2 = it2.config.getProxyOutbound()
-                    if( outbound == outbound2 && !deleteServer.contains(it2.guid))
-                    {
+                    if (outbound == outbound2 && !deleteServer.contains(it2.guid)) {
                         deleteServer.add(it2.guid)
                     }
                 }
             }
         }
-        for(it in deleteServer){
+        for (it in deleteServer) {
             MmkvManager.removeServer(it)
         }
         reloadServerList()
-        getApplication<AngApplication>().toast(getApplication<AngApplication>().getString(R.string.title_del_duplicate_config_count, deleteServer.count()))
+        getApplication<AngApplication>().toast(
+            getApplication<AngApplication>().getString(
+                R.string.title_del_duplicate_config_count,
+                deleteServer.count()
+            )
+        )
     }
 
     private val mMsgReceiver = object : BroadcastReceiver() {

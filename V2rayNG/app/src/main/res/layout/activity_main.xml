@@ -92,7 +92,7 @@
                         android:clickable="true"
                         android:focusable="true"
                         android:nextFocusLeft="@+id/layout_test"
-                        android:src="@drawable/ic_stat_name"
+                        android:src="@drawable/ic_foot_print_weis_neu2_foreground"
                         app:layout_anchorGravity="bottom|right|end" />
 
                 </com.github.jorgecastilloprz.FABProgressCircle>

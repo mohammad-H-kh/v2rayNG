@@ -36,21 +36,6 @@ android {
         }
     }
 
-    flavorDimensions "versions"
-
-    productFlavors {
-        dev {
-            applicationIdSuffix = ".dev"
-            versionNameSuffix = "-dev"
-        }
-        pre_release {
-            applicationIdSuffix = ".pre"
-            versionNameSuffix = "-pre-release"
-        }
-        prod {
-        }
-    }
-
     sourceSets {
         main {
             jniLibs.srcDirs = ['libs']
@@ -87,7 +72,6 @@ android {
 
     buildFeatures {
         viewBinding true
-        buildConfig true
     }
     namespace 'com.v2ray.ang'
     testNamespace 'com.v2ray.angTest'
@@ -95,6 +79,7 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.aar', '*.jar'], exclude: [])
+    implementation files('/V2rayNG/app/libs')
     testImplementation 'junit:junit:4.13.2'
 
     // Androidx
@@ -132,4 +117,12 @@ dependencies {
     implementation 'com.blacksquircle.ui:language-json:2.1.1'
     implementation 'io.github.g00fy2.quickie:quickie-bundled:1.6.0'
     implementation 'com.google.zxing:core:3.5.1'
+
+
+    // Retrofit
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+
+    // Gson
+    implementation 'com.google.code.gson:gson:2.8.8'
 }

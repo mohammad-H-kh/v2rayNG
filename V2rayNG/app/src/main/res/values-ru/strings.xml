@@ -239,7 +239,5 @@
         <item>VPN</item>
         <item>Только прокси</item>
     </string-array>
-    <string name="import_subscription_success">Подписка импортирована</string>
-    <string name="import_subscription_failure">Подписка не импортирована</string>
 
 </resources>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">v2rayNG</string>
+    <string name="app_name" translatable="false">Radepa</string>
     <string name="app_widget_name">Switch</string>
     <string name="app_tile_name">Switch</string>
     <string name="app_tile_first_use">First use of this feature, please use the app to add server</string>
@@ -19,7 +19,7 @@
     <string name="toast_services_failure">Start Services Failure</string>
 
     <!--ServerActivity-->
-    <string name="title_server">Configuration file</string>
+    <string name="title_server">Configuration files</string>
     <string name="menu_item_add_config">Add config</string>
     <string name="menu_item_save_config">Save config</string>
     <string name="menu_item_del_config">Delete config</string>
@@ -211,9 +211,6 @@
     <string name="connection_test_error_status_code">Error code: #%d</string>
     <string name="connection_connected">Connected, tap to check connection</string>
     <string name="connection_not_connected">Not connected</string>
-
-    <string name="import_subscription_success">Subscription imported Successfully</string>
-    <string name="import_subscription_failure">Import subscription failed</string>
 
     <string-array name="share_method">
         <item>QRcode</item>
