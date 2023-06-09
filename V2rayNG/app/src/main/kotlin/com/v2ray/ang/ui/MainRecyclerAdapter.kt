@@ -2,7 +2,10 @@ package com.v2ray.ang.ui
 
 import android.content.Intent
 import android.graphics.Color
+import kotlin.concurrent.thread
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
@@ -55,6 +58,8 @@ class MainRecyclerAdapter(val activity: MainActivity) :
     }
 
     private var mActivity: MainActivity = activity
+    private lateinit var myThread: Thread
+    private val handler = Handler(Looper.getMainLooper())
 
     private val mainStorage by lazy {
         MMKV.mmkvWithID(
@@ -233,7 +238,7 @@ class MainRecyclerAdapter(val activity: MainActivity) :
 //                    }
 //                    notifyItemChanged(mActivity.mainViewModel.getPosition(guid))
 //                }
-                handleButtonClick(text,email, password, position, guid, domain)
+                handleButtonClick(text, email, password, position, guid, domain)
 
                 println(tvUse)
 
@@ -371,9 +376,12 @@ class MainRecyclerAdapter(val activity: MainActivity) :
     private fun dontUseRadepa(
     ) {
         mActivity.showMessage("Your config is not created with radepa-xui panel")
-        mActivity.mainViewModel.dontUseRadepa()
     }
 
+    private fun sendWaitMessage(
+    ) {
+        mActivity.showMessage("Please Wait a minute ...")
+    }
 
     //TODO: Check this func
     private fun handleButtonClick(
@@ -390,79 +398,97 @@ class MainRecyclerAdapter(val activity: MainActivity) :
 
         val text1 = "$client"
 
-        if (hasHyphen(text1)){
-            val result = sendRequestToMultiplePorts(url)
-
-            if (result != null) {
-                println("Processing complete")
-
-                val retrofit = Retrofit.Builder()
-                    .baseUrl("$result/")
-                    .addConverterFactory(GsonConverterFactory.create())
-                    .build()
-
-                val apiService = retrofit.create(ApiService::class.java)
-
-                val getDataReq = GetDataRequest(email, password)
-                val call = apiService.login(getDataReq)
-
-                call.enqueue(object : retrofit2.Callback<GetDataResponse> {
-                    @RequiresApi(Build.VERSION_CODES.O)
-                    override fun onResponse(
-                        call: retrofit2.Call<GetDataResponse>,
-                        response: retrofit2.Response<GetDataResponse>
-                    ) {
-                        if (response.isSuccessful) {
-                            val getDataRequest = response.body()
-                            val downValue = getDataRequest?.obj?.down
-                            val upValue = getDataRequest?.obj?.up
 
 
-                            val sum = downValue?.plus(upValue!!)
-                            val totalUsage = getDataRequest?.obj?.total
-                            val expire = getDataRequest?.obj?.expiryTime
 
 
-                            println("Response: ${getDataRequest}")
 
-                            if (totalUsage != null) {
-                                if (sum != null) {
-                                    if (expire != null) {
-                                        updateUsage(
-                                            totalUsage,
-                                            sum,
-                                            expire,
-                                            guid,
-                                            position,
-                                            email,
-                                            password
-                                        )
+        if (hasHyphen(text1)) {
+
+            sendWaitMessage()
+
+            myThread = Thread {
+                val result = sendRequestToMultiplePorts(url)
+
+                if (result != null) {
+                    println("Processing complete")
+
+                    val retrofit = Retrofit.Builder()
+                        .baseUrl("$result/")
+                        .addConverterFactory(GsonConverterFactory.create())
+                        .build()
+
+                    val apiService = retrofit.create(ApiService::class.java)
+
+                    val getDataReq = GetDataRequest(email, password)
+                    val call = apiService.login(getDataReq)
+
+                    call.enqueue(object : retrofit2.Callback<GetDataResponse> {
+                        @RequiresApi(Build.VERSION_CODES.O)
+                        override fun onResponse(
+                            call: retrofit2.Call<GetDataResponse>,
+                            response: retrofit2.Response<GetDataResponse>
+                        ) {
+                            if (response.isSuccessful) {
+                                val getDataRequest = response.body()
+                                val downValue = getDataRequest?.obj?.down
+                                val upValue = getDataRequest?.obj?.up
+
+
+                                val sum = downValue?.plus(upValue!!)
+                                val totalUsage = getDataRequest?.obj?.total
+                                val expire = getDataRequest?.obj?.expiryTime
+
+
+                                println("Response: ${getDataRequest}")
+
+                                if (totalUsage != null) {
+                                    if (sum != null) {
+                                        if (expire != null) {
+                                            updateUsage(
+                                                totalUsage,
+                                                sum,
+                                                expire,
+                                                guid,
+                                                position,
+                                                email,
+                                                password
+                                            )
+                                        } else {
+                                            dontUseRadepa()
+                                        }
                                     } else {
                                         dontUseRadepa()
+
                                     }
                                 } else {
                                     dontUseRadepa()
 
                                 }
+
                             } else {
-                                dontUseRadepa()
-
+                                println("Failed to login: ${response.code()}")
                             }
-
-                        } else {
-                            println("Failed to login: ${response.code()}")
                         }
-                    }
 
-                    override fun onFailure(call: retrofit2.Call<GetDataResponse>, t: Throwable) {
-                        println("Failed to login: ${t.message}")
-                    }
-                })
+                        override fun onFailure(
+                            call: retrofit2.Call<GetDataResponse>,
+                            t: Throwable
+                        ) {
+                            println("Failed to login: ${t.message}")
+                        }
+                    })
 
-            } else {
-                dontUseRadepa()
+                } else {
+                    dontUseRadepa()
+                }
+                handler.post {
+                    // Code to be executed on the main thread
+                    println("Thread has finished")
+                }
             }
-        }else{
+            myThread.start()
+        } else {
             dontUseRadepa()
         }
 
